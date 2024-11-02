@@ -1,0 +1,229 @@
+<div id = "comments-list">
+    {{#commentDtos}}
+
+        <!-- 댓글 카드만들고 id 부여-->
+        <div class="card m-2" id="comments-{{id}}">
+            <!-- 댓글 헤더 영역 설정-->
+            <div class="card-header">
+                {{nickname}} <!-- 닉네임 보여주기-->
+                <!-- Button trigger modal -->
+                <button type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#comment-edit-modal"
+                        data-bs-id="{{id}}"
+                        data-bs-nickname="{{nickname}}"
+                        data-bs-body="{{body}}"
+                        data-bs-article-id="{{articleId}}"
+                        >수정</button>
+                <!-- 댓글 삭제 버튼 -->
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger comment-delete-btn"
+                        data-comment-id="{{id}}">삭제</button>
+            </div>
+            <!-- 댓글 본문 영역-->
+            <div class="card-body">
+                {{body}} <!-- 댓글 본문 보여주기-->
+            </div>
+        </div>
+    {{/commentDtos}}
+</div>
+
+<!-- Modal-->
+<div class="modal fade" id="comment-edit-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">댓글 수정</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form> <!-- 댓글 수정 폼 -->
+                    <div class="mb-3">
+                        <label class="form-label">닉네임</label>
+                        <input type="text" class="form-control" id="edit-comment-nickname">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">댓글 내용</label>
+                        <textarea type="text" class="form-control" rows="3" id="edit-comment-body"></textarea>
+                    </div>
+                        <input type="hidden" id="edit-comment-id"> <!-- 댓글의 아이디-->
+                    <input type="hidden" id="edit-comment-article-id"> <!-- 부모 게시글의 아이디-->
+                    <button type="button" class="btn btn-primary" id="comment-update-btn">수정 완료</button> <!-- 전송버튼 -->
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 모달 이벤트 처리 -->
+<script>
+    {
+        // 모달 요소 선택 querySelector()
+        const commentEditModal = document.querySelector("#comment-edit-modal");
+        // 모달 이벤트 감지
+        commentEditModal.addEventListener("show.bs.modal",function (event) {
+            // 1. 트리거 버튼 선택
+            const triggerBtn = event.relatedTarget; // button trigger 호출함. Modal은 event.target
+            // 2. 데이터 가져오기
+            const id = triggerBtn.getAttribute("data-bs-id"); // id 가져오기
+            const nickname = triggerBtn.getAttribute("data-bs-nickname"); //닉네임 가져오기
+            const body = triggerBtn.getAttribute("data-bs-body"); // 본문 가져오기
+            const articleId = triggerBtn.getAttribute("data-bs-article-id"); // 부모 id 가져오기
+
+            // 3. 수정 폼에 데이터 변경
+            // 닉네임 반영
+            document.querySelector("#edit-comment-nickname").value = nickname;
+             // 댓글 본문 반영
+            document.querySelector("#edit-comment-body").value = body;
+            // id 반영
+            document.querySelector("#edit-comment-id").value = id;
+             // 부모 id 반영
+            document.querySelector("#edit-comment-article-id").value = articleId;
+
+        });
+
+    }
+    // 자바스크립트로 REST API 호출 및 응답 처리
+    // 수정완료 버튼 클릭해, REST API 호출하는 과정
+    {
+        // 1. 수정완료 버튼 선택
+        const commetUpdateBtn = document.querySelector("#comment-update-btn");
+        // 2. 클릭 이벤트 처리
+        commetUpdateBtn.addEventListener("click", function (){
+           // 수정 댓글 객체 생성
+           const comment = {
+               id: document.querySelector("#edit-comment-id").value,
+               nickname: document.querySelector("#edit-comment-nickname").value,
+               body: document.querySelector("#edit-comment-body").value,
+               articleId: document.querySelector("#edit-comment-article-id").value
+           };
+           console.log(comment);
+
+           // 수정 REST API 호출
+            const url = "/api/comments/" + comment.id;
+            fetch(url,{
+                method: "PATCH", // PATCH 요청
+                headers:{ // 전송 데이터 타입(JSON) 정보
+                    "Content-Type": "application/json"
+                },
+                body:JSON.stringify(comment) //comment 객체를 JSON 문자열로 변환 전송
+            }).then(response => {
+                //HTTP 응답 코드에 따른 메시지 출력
+                const msg = (response.ok) ? "댓글이 수정됐습니다." : "댓글 수정 실패..!";
+                alert(msg);
+                //현재 페이지 새로고침
+                window.location.reload();
+            })
+        });
+    }
+</script>
+<!-- 자바스크립트로 댓글 삭제하기  -->
+<!-- 댓글 삭제 -->
+<script>
+    // 클릭 이벤트 처리
+    {
+        // 삭제 버튼 선택
+        const commentDeleteBtns = document.querySelectorAll(".comment-delete-btn"); // 여기서, .은 클래스선택자(클래스 요소를 선택할수 있음)
+        // 삭제 버튼 클릭이벤트 처리
+        // commentDeleteBtns.addEventListener("click",function () {
+        //     console.log("삭제 버튼이 클릭됐습니다..!");
+        // });
+        commentDeleteBtns.forEach(btn => { //[삭제] 버튼 수만큼 반복
+            btn.addEventListener("click",(event) => { // event 객체 받아옴
+                // 이벤트 발생 요소 선택
+                const commentDeleteBtn = event.target; // 이벤트를 발생시킨 요소(삭제버튼)을 가져와 변수에 저장
+                // 삭제 댓글 id 가져오기
+                const commentId = commentDeleteBtn.getAttribute("data-comment-id"); // id 가져오기
+                console.log(`삭제 버튼 클릭: ${commentId}번 댓글`);
+                // 삭제 REST API 호출
+                const url = `/api/comments/${commentId}`;
+                fetch(url,{
+                    method: "DELETE"
+                }).then(response =>{
+                    // 댓글 삭제 실패 처리
+                    if(!response.ok) {
+                        alert("댓글 삭제 실패");
+                        return;
+                    }
+                    //삭제 성공 시 메시지 창 띄우기
+                    const msg = `${commentId}번 댓글을 삭제하였습니다.`;
+                    alert(msg);
+                    //현재 페이지 새로 고침
+                    window.location.reload();
+                })
+            });
+        });
+    }
+</script>
+<!--
+
+` 백틱은, ${} 문법으로, 문자열에 변수 또는 식을 넣을수 있음.
+
+
+forEach() 메서드는 반복처리를 위해서 사용이되고,
+배열 또는 배열과 유사한 데이터묶음(NodeList, Map, set, String...) 을
+순회하면서 처리하는 메서드.
+매개변수로 주어진 함수를 배열속 각 요소에 적용해 처리함
+
+
+
+
+화살표 함수  "=>" 는, function 키워드 대신 =>를 사용해 함스를 정의하는 방법임
+btn.add..Listener("click", ()=> {...}) // 화살표 함수 사용
+btn.add..Listener("click", funtion() {...}) // function 함수 사용
+
+function과 => 는 같다.
+
+() => { ... } 은, 매개변수가 없는 경우
+x => {...} 또는 (x) => {....} 은, 매개변수가 1개인경우,
+(x,y) => {...} 은, 매개변수가 여러개인 경우
+
+-->
+
+<!--
+
+ querySeletorAll() 메서드는, 선택자로 지정한 모든 요소를 찾아 반환함
+.querySelectorAll("CSS_선택자_문법")
+
+ ( querySelector() 메서드로 구현된 삭제버튼은, 한번만 반환이 됨.
+ 그렇게 되면, 한번 삭제버튼이 눌리고, 그다음부터는 삭제버튼이 처리가 되지않음)
+
+ -->
+
+<!--
+
+show.bs.modal은, 모달동작의 이벤트 타입임.
+     ( 모달이 표시되기 직전 실행되는 이벤트)
+
+     function(event) 는 모달이 열리는 이벤트를 매개변수로받아 실행되는 함수.
+     "여기서 event는, show.bs.modal을 가리킴
+
+     특정 이벤트를 처리를 담당하는 함수를 이벤트 핸들러라고 함.
+-->
+
+<!--
+  data-bs-toggle="modal" 클릭하면 모달이 나타나고, 다시클릭시 사라짐
+  data-bs-target="#exampleModal" 해당 id의 모달 실행
+.-->
+
+<!-- data- 로 시작하는 속성을 "데이터속성"이라고함.
+HTML요소에 추가정보를 저장하고 싶을 떄 사용함
+개수제한無, 하나의 요소에 여러데이터속성 사용가능.
+
+사용방식 : data-자유로운 이름 작명
+
+   data-bs-id="id" 댓글의 id 저장
+   data-bs-nickname="nickname" 댓글의 닉네임 저장
+   data-bs-body="body" 댓글의 본문 저장
+   data-bs-article-id="articleId" 부모게시글의 id 저장
+
+-->
+
+<!-- #commentDtos은 commentDtos가 여러데이터라면,
+머스테치 문법안쪽의 내용을 반복하라는 뜻-->
+<!--
+class="card" 속성은, 이 영역을 카드구조로 만들라는 뜻.
+
+id="comments-id" 속성은, 반복되는 commentsDtos에 있는
+id값을 삽입해, 이영역의 id를 comments-1,-2,-3 등으로 설정하라는 뜻
+-->

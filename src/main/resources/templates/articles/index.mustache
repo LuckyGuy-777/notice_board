@@ -1,0 +1,25 @@
+{{>layouts/header}}
+<!-- 데이터 목록 페이지 -->
+<table class="table">
+    <thead>
+    <tr>
+        <th>id</th>
+        <td>title</td>
+        <td>content</td>
+    </tr>
+    </thead>
+    <tbody>
+    {{#articleList}}
+        <tr>
+            <th>{{id}}</th>
+            <td><a href="/articles/{{id}}">{{title}}</a></td>
+            <td>{{content}}</td>
+        </tr>
+    {{/articleList}}
+
+    </tbody>
+</table>
+
+<a href="/articles/new">New Article</a>
+
+{{>layouts/footer}}
